@@ -7,13 +7,13 @@ SERVER = 'irc.chat.twitch.tv'
 PORT = 6667
 NICKNAME = 'TwitchMakesATAS'
 #region oauth token haha.
-TOKEN = 'ouath:c0ck4ndb41lt0rtur30nw1kip3d143'
+TOKEN = 'oauth:c0ck4ndb41lt0rtur30nw1kip3d143'
 #endregion
 CHANNEL = '#redstone59'
 START_TIME = time.time()
 GOOD_BOYS = ['redstone59','gaster319']
 BOTS = ["twitchmakesatas","wizebot","nightbot","streamelements"]
-MAJORITY = 0.2
+MAJORITY = 0.5
 FRAME_LIMIT=100
 
 FM2_METADATA="""version 3
@@ -92,7 +92,7 @@ def timed():
             democracy()
             g.has_alerted=False
         if time.time()-g.vote_start_time >= g.vote_time-10 and g.no_votes<g.no_vote_limit:
-            if not g.has_alerted: send_msg("There is 10 seconds left on the vote!")
+            if not g.has_alerted and len(g.viewer_list) <= 3: send_msg("There is 10 seconds left on the vote!")
             g.has_alerted=True
         if time.time()>=g.yay_expiry and g.yay_active:
             yay_complete()
@@ -146,8 +146,14 @@ def yay_complete():
     contents:str=g.yay_command
     g.yay_active=False
     g.yay_expiry=0x7fffffff
+    
+    user_args=contents.replace(', ',',').split()
+    if len(user_args)>1: user_args="".join(user_args[1:]).lower().split(',')
+    for x in user_args:
+        x.strip()
+        
     if contents.startswith("PIANO "):
-        args=contents.split()
+        args=user_args
         #if len(args)>1 and args[1].isdigit():
         g.last_viewed_frame=int(args[1])
         g.tk_queue+=[["piano",int(args[1])]]
@@ -157,6 +163,7 @@ def yay_complete():
     
     elif g.nes_active:
         if contents.startswith("PLAY"):
+            args=user_args
             if len(contents)==4:
                 send_msg("Playing whole movie...")
                 tas.export("d:/! various files/python/twitch bot doodads","twitch",FM2_METADATA)
@@ -168,11 +175,11 @@ def yay_complete():
                 if not args[1].isdigit(): 
                     send_msg("Invalid frame!")
                     return
-                start="0"
-                end=args[1]
+                start=args[1]
+                end=0x7fffffff
                 
                 if len(args) > 2 and args[2].isdigit():
-                    start=args[2]
+                    end=args[2]
                 send_msg("Playing from frame " + start + "...")
                 tas.export("d:/! various files/python/twitch bot doodads","twitch",FM2_METADATA)
                 nes.play(int(end),int(start))
@@ -189,6 +196,7 @@ def vote(voter: str, vote: str):
     if g.no_votes >= g.no_vote_limit: 
         g.no_votes=0
         g.vote_start_time=time.time()
+        gui.start_time=time.time()
         send_msg("Restarting timer...")
     for x in g.voteList:
         if voter in g.voteList[x]: g.voteList[x].remove(voter)
@@ -217,6 +225,7 @@ def democracy():
         if g.no_votes==g.no_vote_limit: 
             send_msg(f"{g.no_vote_limit} unsuccessful votes in a row! Stopping timer...")
             g.vote_start_time=0xFFFFFFFF
+            gui.start_time="stopped"
         return
     g.no_votes=0
     if len(tie_list) > 1:
@@ -231,11 +240,11 @@ def democracy():
 def democracy_manifest(command:str):
     
     #argument parsing
-    user_args=command.split()
-    if len(user_args)>1: user_args=user_args[1].lower().split(',')
+    user_args=command.replace(', ',',').split()
+    if len(user_args)>1: user_args="".join(user_args[1:]).lower().split(',')
     for x in user_args:
-        x.lower()
-    
+        x.strip()
+
     frames=[-1,-1]
     if command.startswith("WRITE "):
         if len(user_args)<2: send_msg("Missing arguments!"); return
@@ -309,10 +318,10 @@ def bot(message: list):
         
         #argument parsing
         
-        user_args=contents.split()
-        if len(user_args)>1: user_args=user_args[1].lower().split(',')
+        user_args=contents.replace(', ',',').split()
+        if len(user_args)>1: user_args="".join(user_args[1:]).lower().split(',')
         for x in user_args:
-            x.lower()
+            x.strip()
         
         #general commands
         #note to self: using elif statements for this is annoying as fuck,
@@ -370,7 +379,7 @@ def bot(message: list):
         
         elif contents.startswith("REMOVE "):
             if len(user_args)<2: send_msg("Missing arguments!"); return
-            args=["N/A","N/A",'abstudlr']
+            args=["N/A","1",'abstudlr']
             for x in range (len(user_args)):
                 args[x]=user_args[x]
             
@@ -453,10 +462,14 @@ def bot(message: list):
                 try:
                     exec(contents)
                 except Exception as e:
-                    print(Exception, ":", e)
+                    print(type(e).__name__, ":", e)
+    except ConnectionAbortedError:
+        raise KeyboardInterrupt
+    except ConnectionResetError:
+        raise KeyboardInterrupt
     except Exception as e:
-        send_msg(f"Error! {Exception}: {e}")
-        print(f"Error! {Exception}: {e}")
+        send_msg(f"Error! {type(e).__name__}: {e}")
+        print(f"Error! {type(e).__name__}: {e}")
 
 g=BotVariable
 try:
