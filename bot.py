@@ -7,7 +7,7 @@ SERVER = 'irc.chat.twitch.tv'
 PORT = 6667
 NICKNAME = 'TwitchMakesATAS'
 #region oauth token haha.
-TOKEN = 'oauth:c0ck4ndb41lt0rtur30nw1kip3d143'
+TOKEN = 'ouath:c0ck4ndb41lt0rtur30nw1kip3d143'
 #endregion
 CHANNEL = '#redstone59'
 START_TIME = time.time()
@@ -315,12 +315,14 @@ def bot(message: list):
             x.lower()
         
         #general commands
-        
+        #note to self: using elif statements for this is annoying as fuck,
+        #rewrite later with match statements for the zeroth index of the user_args kthxbye :3
+
         if contents.startswith("`help"):
-            send_msg("help message placeholder")
+            send_msg("You can find out how to use the bot here: https://github.com/redstone59/TwitchMakesATAS/blob/main/README.md")
             
         elif contents.startswith("`repo"):
-            send_msg("github repo placeholder")
+            send_msg("The GitHub repo can be found here: https://github.com/redstone59/TwitchMakesATAS")
         
         elif contents.startswith("`uptime"):
             uptime=math.floor(time.time()-START_TIME)
@@ -332,7 +334,7 @@ def bot(message: list):
             if g.no_votes<g.no_vote_limit: send_msg(f"There is {g.vote_time-math.floor(time.time()-g.vote_start_time)} seconds left to vote!")
             else: send_msg("The timer is paused due to a lack of votes. Vote to start the timer again!")
         
-        #yay votes
+        #yay votes/majority votes
         
         elif contents.startswith("YAY"):
             if not g.yay_active:
