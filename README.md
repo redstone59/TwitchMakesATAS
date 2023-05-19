@@ -4,7 +4,6 @@
   - [TAS Votes](#tas-votes)
   - [Other Votes](#other-votes)
 - [Commands](#commands)
-  - [Major Syntax Note](#major-syntax-note)
   - [General Commands](#general-commands)
     - [\`help](#help)
     - [\`repo](#repo)
@@ -47,10 +46,6 @@ If an 'other' vote is cast, it will require a majority of viewers to agree to th
 
 # Commands
 Commands in the bot are signified by a capitalised starting word (except for general commands). Examples include `PLAY 31,41`, `WRITE 2718,abr`, `FRAME 250`, `REVERT "12-05 V10"`.
-## Major Syntax Note
-Each argument in a command is seperated by either a comma, or a comma with a space. The bot (most likely) wil
-
-*How do you know that the command has failed?* The bot wouldn't have responded to your message, or it doesnt appear on the stream.
 
 ## General Commands
 These commands are the only commands not to use the capitalised starting word format, instead starting with a backtick (\`). These commands take no arguments.
