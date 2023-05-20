@@ -71,9 +71,17 @@ Casts a vote to write to the TAS.
 
 `length` states how many future frames will also have the buttons written too (This does **NOT** overwrite other frames.). Defaults to 1 frame.
 
-`pattern` is a number that changes the firing pattern of the button. Example: `WRITE 1,t,32,2` writes T (start) to 32 frames (ending at frame 33), with the pattern On, Off, since 2 in binary is 10. 
+`pattern` is a number that changes the firing pattern of the button. Example: `WRITE 1,t,33,2` writes T (start) to 32 frames (ending at frame 33), with the pattern On, Off, since 2 in binary is 10. 
 
 To write the "One Quarter" pattern (as it's known in the TAS Editor), first write it out in binary, where 1 is pressed and 0 is not pressed. 1000 is equal to 8 in base 10, and that number is what you would use for the `pattern` argument. By default, `pattern` is set to 1, which means its active each frame.
+
+Examples:
+
+`WRITE 250,a`: Writes the button A to frame 250.
+
+`WRITE 250,br,500`: Writes B and R for 500 frames **starting from** frame 250. (Writes from frame 250 to frame 750)
+
+`WRITE 1,t,33,2`: Writes T from frame 1 to frame 34 with an alternating pattern, like a Turbo Start button.
 
 ### REMOVE frame,length,\[buttons="abstudlr"\]
 Removes all instances of the buttons specified from the starting frame to the starting frame plus the length.
@@ -83,6 +91,14 @@ Removes all instances of the buttons specified from the starting frame to the st
 `length` is how many future frames are also affected.
 
 `buttons` specifies which inputs to remove. Defaults to all buttons, clearing an entire frame.
+
+Examples:
+
+`REMOVE 319`: Removes all inputs on frame 319.
+
+`REMOVE 314,141`: Removes all inputs on the 141 frames **after** frame 314, including frame 314.
+
+`REMOVE 314,141,r`: Remove only R inputs from the range specified before.
 
 ### INSERT frame,\[buttons=""\]
 **NOTE: This command is not present in the current version of the bot.**
@@ -111,6 +127,13 @@ Goes to the frame specified. Requires a majority vote.
 ### PLAY \[start=0\] \[end=length of the movie\]
 Plays the TAS from the specified starting frame to the end frame. If no arguments are specified, then it plays the whole movie.
 Requires a majority vote.
+
+Examples:
+
+`PLAY`: Plays the whole movie
+`PLAY 161`: Plays the movie starting from frame 160.
+`PLAY 161,803`: Plays the movie from frame 160, and pauses on frame 803.
+`PLAY 0,803`: Plays the movie from the start, pausing at frame 803.
 
 ### PIANO frame
 Changes the piano roll to start from the frame specified. Requires a majority vote.
