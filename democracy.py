@@ -11,6 +11,16 @@ class Ballot:
         self.ballot_end_time = time.time() + ballot_length
     
     def cast_vote(self, vote: Vote):
+        """
+        Casts a `Vote` into the `Ballot`.
+
+        Args:
+            vote (Vote): The vote being cast.
+
+        Returns:
+            "retract": If the vote is empty.
+            "success": If the vote gets counted.
+        """
         for choice in self.cast_votes:
             if vote.voter in self.cast_votes[choice]:
                 self.cast_votes[choice].remove(vote.voter)
@@ -29,6 +39,15 @@ class Ballot:
         return "success"
 
     def end(self):
+        """
+        Ends the `Ballot` being run.
+
+        Returns:
+            tuple:
+                str: The winning choice
+                int: The number of votes it received
+                bool: If there was a tie
+        """
         largest_number_of_votes = 0
         winning_choice = []
         
@@ -42,12 +61,17 @@ class Ballot:
             elif number_of_votes == largest_number_of_votes:
                 winning_choice += [choice]
         
-        return random.choice(winning_choice) # Select a random item if there is a tie.
+        return random.choice(winning_choice), largest_number_of_votes, len(winning_choice) > 1
 
     def is_over(self):
         return time.time() >= self.ballot_end_time
 
     def trim(self):
+        empty_votes = []
+        
         for choice in self.cast_votes:
             if self.cast_votes[choice] == []:
-                self.cast_votes.pop(choice)
+                empty_votes += [choice]
+        
+        for choice in empty_votes:
+            self.cast_votes.pop(choice)
