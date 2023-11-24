@@ -13,17 +13,6 @@ class Message:
     
     # TODO: function for if sender is a mod or bot?
 
-class Vote:
-    def __init__(self, voter: str, choice: str, cast_time: float):
-        self.voter = voter
-        self.choice = choice
-        self.cast_time = cast_time
-        
-class Ballot:
-    def __init__(self, ballot_length: int):
-        self.cast_votes = []
-        self.ballot_end_time = time.time() + ballot_length
-
 # Should the above classes be moved to a new file? Probably.        
 
 class TwitchBot:
@@ -40,6 +29,7 @@ class TwitchBot:
         self.message_limit = 100
         
         self.sequential_empty_ballots = 0
+        self.empty_ballot_limit = 3
     
     def connect(self, token: str, nickname: str, channel: str, server = 'irc.chat.twitch.tv', port = 6667):
         """
@@ -63,6 +53,15 @@ class TwitchBot:
         
         print("TwitchMakesATAS connected")
     
+    def disconnect(self):
+        """
+        Disconnects TwitchMakesATAS from the Twitch Chat API.
+        """
+        
+        self.is_active = False
+        self.sock.send("PART\n".encode('utf-8'))
+        self.sock.close()
+    
     def message_loop(self):
         """
         Starts the bot's loop of checking for new messages and responding.
@@ -84,11 +83,13 @@ class TwitchBot:
                 self.message_queue += [Message(sender, contents)] # Should probably respond to messages as soon as they arrive, like in the previous version.
     
     def send_message(self, message: str):
-        self.messages_last_minute += 1
-        print(f"Sent message: '{message}'. Messages sent in the last minute: {self.messages_last_minute}")
         if self.messages_last_minute >= self.message_limit:
             self.can_speak = False
             return # Is this a minor optimisation? Why check if it can speak after if we just changed it to no?
+        
+        self.messages_last_minute += 1
+        print(f"Sent message: '{message}'. Messages sent in the last minute: {self.messages_last_minute}")
+        
         if self.can_speak:
             self.sock.send(f"PRIVMSG {self.channel} :{message}\n".encode('utf-8'))
     
@@ -102,8 +103,3 @@ class TwitchBot:
             
             if not (self.sequential_empty_ballots < self.empty_ballot_limit):
                 continue
-
-tmat = TwitchBot()
-tmat.connect("oauth:veryrealtwitchapitoken","TwitchMakesATAS","#redstone59")
-tmat.send_message("owo")
-tmat.message_loop()
