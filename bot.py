@@ -15,11 +15,13 @@ class TwitchBot:
         self.sock = socket.socket()
         
         self.channel = ""
+        self.viewer_list = {}
+        self.viewer_expiry = 120
         
-        self.is_active = True
         self.can_speak = True
+        self.is_active = True
         
-        self.time_of_last_message = 0
+        self.time_of_last_message = time.time()
         self.messages_last_minute = 0
         self.message_queue = [] # This feels clunky, replace?
         self.message_limit = 100
@@ -65,6 +67,8 @@ class TwitchBot:
                 self.messages_last_minute = 0
                 self.can_speak = True
             
+            self.time_of_last_message = time.time()
+            
             response = self.sock.recv(2048).decode('utf-8')
 
             if response.startswith('PING'):
@@ -78,6 +82,7 @@ class TwitchBot:
                 contents = ':'.join(contents)
                 
                 print(Message(sender, contents))
+                self.update_viewer_list(sender)
                 self.message_queue += [Message(sender, contents)] # Should probably respond to messages as soon as they arrive, like in the previous version.
     
     def send_message(self, message: str):
@@ -90,3 +95,21 @@ class TwitchBot:
         
         if self.can_speak:
             self.sock.send(f"PRIVMSG {self.channel} :{message}\n".encode('utf-8'))
+            
+    def update_viewer_list(self, sender: str):
+        inactive_viewers = []
+        
+        for viewer in self.viewer_list:
+            if time.time() > self.viewer_list[viewer]:
+                inactive_viewers += [viewer]
+        
+        for viewer in inactive_viewers:
+            del self.viewer_list[viewer]
+        
+        if sender != "":
+            self.viewer_list[sender] = time.time() + self.viewer_expiry
+        
+        print("Current viewers:", self.viewer_count())
+    
+    def viewer_count(self):
+        return len(self.viewer_list)
