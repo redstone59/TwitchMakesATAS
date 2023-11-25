@@ -16,9 +16,16 @@ def bit(number: int, n: int):
     """
     return (number >> n - 1) & 1
 
+def int_all(*vars):
+    vars = list(vars)
+    
+    for x in range (len(vars)):
+        vars[x] = int(vars[x])
+        
+    return tuple(vars)
+
 class ToolAssistedSpeedrun:
-    def __init__(self, metadata = ""):
-        self.fm2_metadata = metadata
+    def __init__(self, metadata = "", frame_limit = 0):
         self.frames = []
         """
         The `frames` list is just going to be a list of numbers from 0-255
@@ -29,6 +36,8 @@ class ToolAssistedSpeedrun:
         
         Therefore 131 represents the buttons R, B, and A being pressed.
         """
+        self.fm2_metadata = metadata
+        self.frame_limit = frame_limit
     
     def backup(self, name: str, dir = os.path.join(CURRENT_DIRECTORY, "backups")):
         """
@@ -75,6 +84,9 @@ class ToolAssistedSpeedrun:
             frame (int): The starting frame.
             length (int, optional): Self-explanatory. Defaults to 1.
         """
+        
+        frame, length = int_all(frame, length)
+        
         for i in range (length):
             if frame >= len(self.frames): break
             del self.frames[frame]
@@ -99,6 +111,9 @@ class ToolAssistedSpeedrun:
             length (int, optional): Self-explanatory. Defaults to 1.
             buttons (str, optional): The buttons to be pressed in the frames. Defaults to "" (empty frame).
         """
+        
+        frame, length = int_all(frame, length)
+        
         inserted_frames = [self.buttons_to_number(buttons)]
         inserted_frames *= length
         
@@ -161,6 +176,7 @@ class ToolAssistedSpeedrun:
             buttons (str): The buttons to be written.
             length (int, optional): Self-explanatory. Defaults to 1.
         """
+        frame, length = int_all(frame, length)
         
         if frame + length > len(self.frames): # Add frames if they are out of the bound of the frame list.
             self.frames += [0] * (frame + length - len(self.frames))
@@ -177,6 +193,9 @@ class ToolAssistedSpeedrun:
             length (int, optional): Self-explanatory. Defaults to 1.
             buttons (str, optional): The buttons to be removed. Defaults to "RLDUTSBA".
         """
+        
+        frame, length = int_all(frame, length)
+        
         for i in range (length):
             if frame + i > len(self.frames): # Skip frames that don't exist.
                 break
@@ -192,6 +211,9 @@ class ToolAssistedSpeedrun:
             length (int, optional): Self-explanatory. Defaults to 1.
             pattern (_type_, optional): Binary representation of the pattern to write. Defaults to `0b1` (always on).
         """
+        
+        frame, length, pattern = int_all(frame, length, pattern)
+        
         pattern_length = len(bin(pattern)) - 2
         
         if frame + length > len(self.frames): # Add frames if they are out of the bound of the frame list.
