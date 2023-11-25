@@ -1,132 +1,103 @@
-import os.path,math,json,datetime
+import os.path, sys
 
-tas={"a":[],"b":[],"s":[],"t":[],"u":[],"d":[],"l":[],"r":[]}
+CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-def bit(num, n):
-    return (num >> n-1) & 1
+def bit(number: int, n: int):
+    """
+    Returns the `n`th bit from a number from right to left.
 
-def check(frame:int,button:str):
-    if frame in tas[button]:
-        return button.upper()
-    return '.'
+    Args:
+        number (int): The number to find bits from.
+        n (int): The bit index.
 
-def export(dir:str,name:str,metadata:str):
-    frames=0
-    for x in tas:
-        for y in tas[x]:
-            if y>frames: frames=y
-    file=os.path.join(dir,name+".fm2")
-    tasf=open(file,"w")
-    tasf.write(metadata)
-    for x in range (frames+1):
-        tasf.write(f"|0|{check(x,'r')}{check(x,'l')}{check(x,'d')}{check(x,'u')}{check(x,'t')}{check(x,'s')}{check(x,'b')}{check(x,'a')}|||\n")
-    tasf.close()
+    Returns:
+        int: 1 or 0.
+    """
+    return (number >> n - 1) & 1
 
-#def tas_import(file_path:str):
-#    frames=0
-#    for x in tas:
-#       for y in tas[x]:
-#           if y>frames: frames=y
-#    file=os.path.join(file_path)
-#    tasf=open(file,"r")
-#    g=tasf.readlines()[19:]
-#    for x in range (len(g)):
-#        for i in range (8):
-#            print(x,g[x],g[x][i+3],[*"RDLUTSBA"][i],g[x][i+3]==[*"RDLUTSBA"][i])
-#            if g[x][i+3]==[*"RDLUTSBA"][i]: tas[[*"rdlutsba"][i]]+=[x]
-#    tasf.close()
+class ToolAssistedSpeedrun:
+    def __init__(self, metadata: str):
+        self.fm2_metadata = metadata
+        self.frames = []
+        """
+        The `frames` list is just going to be a list of numbers from 0-255
+        Each index is a single frame. Each bit represents a button being pressed.
+        
+               RLDUTSBA
+        131 -> 10000011
+        
+        Therefore 131 represents the buttons R, B, and A being pressed.
+        """
+    
+    def buttons_to_number(self, buttons: str):
+        """
+        Returns the number representation of a combination of buttons.
+        Example: RBA -> `R.....BA` -> 131
 
-def backup(dir:str,name:str):
-    file_name=datetime.datetime.now().strftime("%Y-%m-%d %H-%M ")+name+".json"
-    file=os.path.join(dir,file_name)
-    backup_file=open(file,"w")
-    backup_file.write(str(tas))
-    backup_file.close()
+        Args:
+            buttons (str): The buttons to be changed.
 
-def load_backup(dir:str,name:str):
-    global tas
-    file=os.path.join(dir,name+".json")
-    backup_file=open(file,"r")
-    tas=json.loads(backup_file.read().replace("'",'"'))
-    backup_file.close()
+        Raises:
+            ValueError: if `buttons` contains characters other than `RLDUTSBA`.
 
-def write(frame:int, buttons: list, length=1, pattern=0b1):
-    if pattern <= 0 or frame <= 0 or not valid_buttons(buttons): return
-    patternlen=math.floor(math.log(pattern,2)+1)
-    for x in buttons:
-        if x not in tas.keys(): continue
-        for i in range (length):
-            if bit(pattern, patternlen-(i%patternlen)): tas[x.lower()]+=[frame+i] if frame+i not in tas[x.lower()] else []
+        Returns:
+            int: The equivalent buttons in number form.
+        """
+        if not self.is_valid_buttons(buttons):
+            raise ValueError(f"Invalid buttons {buttons}")
+        
+        result = 0
+        
+        for button in [*"RLDUTSBA"]:
+            if button in buttons.upper():
+                result += 1 << (7 - [*"RLDUTSBA"].index(button))
+        
+        return result
+    
+    def export(self, name: str, dir = CURRENT_DIRECTORY):
+        exported_tas_path = os.path.join(CURRENT_DIRECTORY, f"{name}.fm2")
+        
+        with open(exported_tas_path, "w") as fm2_file:
+            fm2_file.write(self.fm2_metadata)
+            
+            for frame in self.frames:
+                fm2_file.write("|0|")
+                fm2_file.write(self.number_to_buttons(frame))
+                fm2_file.write("|||\n")
+    
+    def is_valid_buttons(self, buttons: str):
+        for button in buttons:
+            if button not in [*"RLDUTSBA"]:
+                return False
+        
+        return True
+    
+    def number_to_buttons(self, number: int):
+        """
+        Turns a number into FM2 formatted buttons.
+        Example: 131 -> `10000011` -> `R.....BA`
 
-def remove(frame: int, length=1, buttons=[*"abstudlr"]):
-    if frame <= 0 or not valid_buttons(buttons): return
-    for x in buttons:
-        if x not in tas.keys(): continue
-        for i in range (length):
-            if frame+i in tas[x.lower()]: tas[x.lower()].remove(frame+i)
+        Args:
+            number (int): The number to change.
 
-def insert(frame:int,buttons=[]):
-    if frame <= 0 or not valid_buttons(buttons): return
-    for x in tas:
-        for i in range (len(tas[x])):
-            if tas[x][i]>=frame: tas[x][i]+=1
-    for i in buttons:
-            if i in tas.keys(): tas[i]+=[frame]
-                
-def delete(frame:int):
-    if frame <= 0: return
-    for i in tas.keys():
-            if frame in tas[i]: tas[i].remove(frame)
-    for x in tas:
-        for i in range (len(tas[x])):
-            if tas[x][i]>=frame: tas[x][i]-=1
+        Raises:
+            ValueError: If `number` is not in the range 0 to 255.
 
-def valid_buttons(buttons:list):
-    valid=True
-    for x in buttons:
-        if x.lower() not in [*"abstudlr"]: return False
-    return valid
+        Returns:
+            str: Button string.
+        """
+        if not (0 <= number <= 255):
+            raise ValueError("number provided to function not in range 0-255")
 
-def length():
-    n=0
-    for x in tas:
-        for y in tas[x]:
-            if y>n: n=y
-    return n
+        result_buttons = ""
 
-def is_valid_command(frame=0, buttons=[*"abstudlr"], length=1, pattern=1):
-    if length < 0: return False
-    if pattern < 0: return False
-    if frame < 0: return False
-    if not valid_buttons(buttons): return False
-    return True
+        for x in range (8):
+            if bit(number, 8 - x):
+                result_buttons += [*"RLDUTSBA"][x]
+            else:
+                result_buttons += "."
+        
+        return result_buttons
 
-write(10,['t'])
-write(47,['r'],14,2)
-write(61,['s'])
-write(63,['r'],6,2)
-write(69,['s'],6,2)
-write(75,['d'],20,1135658)
-write(77,['l'])
-write(87,['l'])
-write(99,['t'])
-
-FM2_METADATA="""version 3
-emuVersion 20605
-rerecordCount 11
-palFlag 0
-romFilename NTSC_SMB1_Practice_ROM_v5.4 (1)
-romChecksum base64:PA18Vzl461l4XHMdCj/fHw==
-guid 968615CF-38AF-690F-162E-A453B00E80B7
-fourscore 0
-microphone 1
-port0 1
-port1 0
-port2 0
-FDS 0
-NewPPU 0
-RAMInitOption 0
-RAMInitSeed 25271
-"""
-
-export("d:/! various files/python/twitch bot doodads","twitch",FM2_METADATA)
+    def write(self, frame: int, buttons: str, length = 1, pattern = 0b1):
+        pattern_length = len(bin(pattern)) - 2
