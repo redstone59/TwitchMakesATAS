@@ -29,6 +29,18 @@ class ToolAssistedSpeedrun:
         Therefore 131 represents the buttons R, B, and A being pressed.
         """
     
+    def backup(self, name: str, dir = os.path.join(CURRENT_DIRECTORY, "backups")):
+        """
+        Creates a backup of `self.frames`.
+
+        Args:
+            name (str): The name of the backup file.
+            dir (str, optional): The directory to the backup file. Defaults to `.\\backups`
+        """
+        
+        with open(os.path.join(dir, name + ".rtas"), "bw") as backup_file:
+            backup_file.write(bytearray(self.frames))
+    
     def buttons_to_number(self, buttons: str):
         """
         Returns the number representation of a combination of buttons.
@@ -54,8 +66,12 @@ class ToolAssistedSpeedrun:
         
         return result
     
+    def delete(self, frame: int, length = 1):
+        # TODO: implement
+        pass
+    
     def export(self, name: str, dir = CURRENT_DIRECTORY):
-        exported_tas_path = os.path.join(CURRENT_DIRECTORY, f"{name}.fm2")
+        exported_tas_path = os.path.join(CURRENT_DIRECTORY, name + ".fm2")
         
         with open(exported_tas_path, "w") as fm2_file:
             fm2_file.write(self.fm2_metadata)
@@ -65,12 +81,28 @@ class ToolAssistedSpeedrun:
                 fm2_file.write(self.number_to_buttons(frame))
                 fm2_file.write("|||\n")
     
+    def insert(self, frame: int, length = 1, buttons = ""):
+        # TODO: implement
+        pass
+    
     def is_valid_buttons(self, buttons: str):
         for button in buttons:
-            if button not in [*"RLDUTSBA"]:
+            if button.upper() not in [*"RLDUTSBA"]:
                 return False
         
         return True
+    
+    def load_backup(self, name: str, dir = os.path.join(CURRENT_DIRECTORY, "backups")):
+        """
+        Loads a backup file and sets `self.frames` to it.
+
+        Args:
+            name (str): The name of the backup file.
+            dir (str, optional): Directory to the file. Defaults to `.\\backups`.
+        """
+        
+        with open(os.path.join(dir, name + ".rtas"), "br") as backup_file:
+            self.frames = list(backup_file.read())
     
     def number_to_buttons(self, number: int):
         """
@@ -99,5 +131,52 @@ class ToolAssistedSpeedrun:
         
         return result_buttons
 
+    def overwrite(self, frame: int, buttons: str, length = 1):
+        """
+        Identical to `write()` but removes existing data from the frames.
+
+        Args:
+            frame (int): The starting frame
+            buttons (str): The buttons to be written.
+            length (int, optional): Self-explanatory. Defaults to 1.
+        """
+        
+        if frame + length > len(self.frames): # Add frames if they are out of the bound of the frame list.
+            self.frames += [0] * (frame + length - len(self.frames))
+        
+        for i in range (length):
+            self.frames[frame + i] = self.buttons_to_number(buttons)
+
+    def remove(self, frame: int, length = 1, buttons = "RLDUTSBA"):
+        """
+        Removes specific buttons from a range of frames in the TAS.
+
+        Args:
+            frame (int): The starting frame
+            length (int, optional): Self-explanatory. Defaults to 1.
+            buttons (str, optional): The buttons to be removed. Defaults to "RLDUTSBA".
+        """
+        for i in range (length):
+            if frame + i > len(self.frames): # Skip frames that don't exist.
+                continue
+            self.frames[frame + i] &= (self.buttons_to_number(buttons) ^ 0xFF) # Unsigned not operand on self.buttons_to_number(buttons)
+
     def write(self, frame: int, buttons: str, length = 1, pattern = 0b1):
+        """
+        Writes certain buttons to a range of frames in the TAS, according to the pattern.
+
+        Args:
+            frame (int): The starting frame.
+            buttons (str): The buttons to write.
+            length (int, optional): Self-explanatory. Defaults to 1.
+            pattern (_type_, optional): Binary representation of the pattern to write. Defaults to `0b1` (always on).
+        """
         pattern_length = len(bin(pattern)) - 2
+        
+        if frame + length > len(self.frames): # Add frames if they are out of the bound of the frame list.
+            self.frames += [0] * (frame + length - len(self.frames))
+        
+        for i in range (length):
+            if bit(pattern, pattern_length - (i % pattern_length)):
+                self.frames[frame + i] |= self.buttons_to_number(buttons)
+
