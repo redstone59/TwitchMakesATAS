@@ -3,7 +3,7 @@ import os.path,math,json,datetime,requests,base64
 tas={"a":[],"b":[],"s":[],"t":[],"u":[],"d":[],"l":[],"r":[]}
 
 #region token for github this time
-TOKEN = "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"
+TOKEN = "ghp_eminempussysoundeffect"
 #endregion
 
 def github_upload(dir,file_name): #Taken from Bracket Counters! Thank you! https://www.bracketcounters.com/upload-files-to-github-using-python
