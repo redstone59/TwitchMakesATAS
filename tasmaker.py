@@ -1,6 +1,7 @@
 import os.path, sys
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(sys.argv[0]))
+BUTTONS = "RLDUTSBA"
 
 def bit(number: int, n: int):
     """
@@ -60,9 +61,9 @@ class ToolAssistedSpeedrun:
         
         result = 0
         
-        for button in [*"RLDUTSBA"]:
+        for button in BUTTONS:
             if button in buttons.upper():
-                result += 1 << (7 - [*"RLDUTSBA"].index(button))
+                result += 1 << (7 - BUTTONS.index(button))
         
         return result
     
@@ -107,7 +108,7 @@ class ToolAssistedSpeedrun:
     
     def is_valid_buttons(self, buttons: str):
         for button in buttons:
-            if button.upper() not in [*"RLDUTSBA"]:
+            if button.upper() not in BUTTONS:
                 return False
         
         return True
@@ -145,7 +146,7 @@ class ToolAssistedSpeedrun:
 
         for x in range (8):
             if bit(number, 8 - x):
-                result_buttons += [*"RLDUTSBA"][x]
+                result_buttons += BUTTONS[x]
             else:
                 result_buttons += "."
         
