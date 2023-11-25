@@ -16,7 +16,7 @@ def bit(number: int, n: int):
     return (number >> n - 1) & 1
 
 class ToolAssistedSpeedrun:
-    def __init__(self, metadata: str):
+    def __init__(self, metadata = ""):
         self.fm2_metadata = metadata
         self.frames = []
         """
@@ -67,8 +67,16 @@ class ToolAssistedSpeedrun:
         return result
     
     def delete(self, frame: int, length = 1):
-        # TODO: implement
-        pass
+        """
+        Deletes a range of frames, shifting frames ahead back.
+
+        Args:
+            frame (int): The starting frame.
+            length (int, optional): Self-explanatory. Defaults to 1.
+        """
+        for i in range (length):
+            if frame >= len(self.frames): break
+            del self.frames[frame]
     
     def export(self, name: str, dir = CURRENT_DIRECTORY):
         exported_tas_path = os.path.join(CURRENT_DIRECTORY, name + ".fm2")
@@ -82,8 +90,20 @@ class ToolAssistedSpeedrun:
                 fm2_file.write("|||\n")
     
     def insert(self, frame: int, length = 1, buttons = ""):
-        # TODO: implement
-        pass
+        """
+        Inserts frames into the TAS, shifting frames ahead forward.
+
+        Args:
+            frame (int): The starting frame.
+            length (int, optional): Self-explanatory. Defaults to 1.
+            buttons (str, optional): The buttons to be pressed in the frames. Defaults to "" (empty frame).
+        """
+        inserted_frames = [self.buttons_to_number(buttons)]
+        inserted_frames *= length
+        
+        self.frames = self.frames[:frame] + inserted_frames
+        if not (frame > len(self.frames)):
+            self.frames += self.frames[frame:]
     
     def is_valid_buttons(self, buttons: str):
         for button in buttons:
@@ -158,7 +178,7 @@ class ToolAssistedSpeedrun:
         """
         for i in range (length):
             if frame + i > len(self.frames): # Skip frames that don't exist.
-                continue
+                break
             self.frames[frame + i] &= (self.buttons_to_number(buttons) ^ 0xFF) # Unsigned not operand on self.buttons_to_number(buttons)
 
     def write(self, frame: int, buttons: str, length = 1, pattern = 0b1):
@@ -180,3 +200,16 @@ class ToolAssistedSpeedrun:
             if bit(pattern, pattern_length - (i % pattern_length)):
                 self.frames[frame + i] |= self.buttons_to_number(buttons)
 
+tas = ToolAssistedSpeedrun()
+
+i = 0
+
+for x in "RLDUTSBA":
+    tas.write(i, x)
+    i += 1
+
+tas.delete(4, 5)
+
+tas.insert(6, 4)
+
+print(tas.frames)
