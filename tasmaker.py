@@ -199,17 +199,3 @@ class ToolAssistedSpeedrun:
         for i in range (length):
             if bit(pattern, pattern_length - (i % pattern_length)):
                 self.frames[frame + i] |= self.buttons_to_number(buttons)
-
-tas = ToolAssistedSpeedrun()
-
-i = 0
-
-for x in "RLDUTSBA":
-    tas.write(i, x)
-    i += 1
-
-tas.delete(4, 5)
-
-tas.insert(6, 4)
-
-print(tas.frames)
