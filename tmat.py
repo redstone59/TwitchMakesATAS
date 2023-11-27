@@ -296,12 +296,10 @@ class TwitchMakesATAS:
             intermediate_voter_string += [f"{voter}: {sorted_thank_you[voter]}"]
         
         total_length = max(len(x) for x in intermediate_voter_string) + 2
-        if total_length < 44:
-            total_length = 44
-        align_character = max([x.index(':') for x in intermediate_voter_string])
+        if total_length < 44: total_length = 44
         
         for x in range (len(intermediate_voter_string)):
-            shift_amount = align_character - intermediate_voter_string[x].index(':') + 1
+            shift_amount = total_length // 2 - intermediate_voter_string[x].index(':') + 1
             intermediate_voter_string[x] = " " * shift_amount + intermediate_voter_string[x]
         
         result = f"\n{'THANK YOU': ^{total_length}}\n"
