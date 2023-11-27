@@ -154,6 +154,12 @@ class TwitchMakesATAS:
                         return
                     
                     self.tas.write(*instruction.arguments)
+                
+                case "OVERWRITE":
+                    if len(instruction.arguments) <= 1:
+                        return
+                    
+                    self.tas.overwrite(*instruction.arguments)
 
                 case "REMOVE":
                     if len(instruction.arguments) <= 0:
@@ -180,6 +186,9 @@ class TwitchMakesATAS:
                     pass
                 
                 case "FRAME":
+                    if not all([x.isdigit() for x in instruction.arguments]):
+                        return
+                    
                     if len(instruction.arguments) <= 0:
                         return
                     
@@ -190,6 +199,9 @@ class TwitchMakesATAS:
                 case "PLAY":
                     instruction.arguments = instruction.arguments[::-1] # Reverse the tuple. For some reason the 'start' and 'end' arguments are the wrong way around
                     
+                    if not all([x.isdigit() for x in instruction.arguments]):
+                        return
+                    
                     self.tas.export("twitch")
                     
                     if len(instruction.arguments) == 1:
@@ -197,13 +209,16 @@ class TwitchMakesATAS:
                         nes.play(0, int(instruction.arguments[0]))
                         return
                     elif len(instruction.arguments) == 2:
-                        self.bot.send_message(f"Playing from frame {instruction.arguments[0]} until frame {instruction.arguments[1]}")
+                        self.bot.send_message(f"Playing from frame {instruction.arguments[1]} until frame {instruction.arguments[0]}")
                     else:
                         self.bot.send_message("Playing whole movie...")
                     
                     nes.play(*[int(x) for x in instruction.arguments])
                 
                 case "PIANO":
+                    if not all([x.isdigit() for x in instruction.arguments]):
+                        return
+                    
                     if len(instruction.arguments) <= 0:
                         return
                     
@@ -286,7 +301,7 @@ class TwitchMakesATAS:
         align_character = max([x.index(':') for x in intermediate_voter_string])
         
         for x in range (len(intermediate_voter_string)):
-            shift_amount = align_character - intermediate_voter_string[x].index(':') + 1
+            shift_amount = total_length // 2 - (align_character - intermediate_voter_string[x].index(':') + 1)
             
             intermediate_voter_string[x] = " " * shift_amount + intermediate_voter_string[x]
         
