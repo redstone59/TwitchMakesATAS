@@ -115,6 +115,8 @@ class ToolAssistedSpeedrun:
         """
         
         frame, length = int_all(frame, length)
+        if not self.is_valid_command(frame, length, buttons):
+            return
         
         inserted_frames = [self.buttons_to_number(buttons)]
         inserted_frames *= length
@@ -127,6 +129,14 @@ class ToolAssistedSpeedrun:
         for button in buttons:
             if button.upper() not in BUTTONS:
                 return False
+        
+        return True
+    
+    def is_valid_command(self, frame, length = 1, buttons = BUTTONS, pattern = 0b1):
+        if frame < self.frame_limit: return False
+        if length <= 0: return False
+        if pattern <= 0: return False
+        if not self.is_valid_buttons(buttons): return False
         
         return True
     
@@ -179,6 +189,8 @@ class ToolAssistedSpeedrun:
             length (int, optional): Self-explanatory. Defaults to 1.
         """
         frame, length = int_all(frame, length)
+        if not self.is_valid_command(frame, length, buttons):
+            return
         
         if frame + length > len(self.frames): # Add frames if they are out of the bound of the frame list.
             self.frames += [0] * (frame + length - len(self.frames))
@@ -197,6 +209,8 @@ class ToolAssistedSpeedrun:
         """
         
         frame, length = int_all(frame, length)
+        if not self.is_valid_command(frame, length, buttons):
+            return
         
         for i in range (length):
             if frame + i > len(self.frames): # Skip frames that don't exist.
@@ -215,6 +229,8 @@ class ToolAssistedSpeedrun:
         """
         
         frame, length, pattern = int_all(frame, length, pattern)
+        if not self.is_valid_command(frame, length, buttons, pattern):
+            return
         
         pattern_length = len(bin(pattern)) - 2
         
