@@ -4,21 +4,23 @@
   - [TAS Votes](#tas-votes)
   - [Other Votes](#other-votes)
 - [Commands](#commands)
+  - [Major Syntax Note](#major-syntax-note)
   - [General Commands](#general-commands)
     - [\`help](#help)
     - [\`repo](#repo)
     - [\`timeleft](#timeleft)
     - [\`uptime](#uptime)
   - [TAS Commands](#tas-commands)
-    - [WRITE frame,buttons,\[length=1\],\[pattern=1\]](#write-framebuttonslength1pattern1)
-    - [REMOVE frame,length,\[buttons="abstudlr"\]](#remove-framelengthbuttonsabstudlr)
-    - [INSERT frame,\[buttons=""\]](#insert-framebuttons)
-    - [DELETE frame](#delete-frame)
+    - [WRITE frame, buttons, \[length=1\], \[pattern=1\]](#write-frame-buttons-length1-pattern1)
+    - [REMOVE frame, length, \[buttons = "abstudlr"\]](#remove-frame-length-buttons--abstudlr)
+    - [OVERWRITE frame, buttons, \[length = 1\]](#overwrite-frame-buttons-length--1)
+    - [INSERT frame, \[length = 1\], \[buttons = ""\]](#insert-frame-length--1-buttons--)
+    - [DELETE frame, \[length = 1\]](#delete-frame-length--1)
     - [IGNORE](#ignore)
     - [REVERT tas-name](#revert-tas-name)
     - [RETRACT](#retract)
     - [FRAME frame](#frame-frame)
-    - [PLAY \[start=0\] \[end=length of the movie\]](#play-start0-endlength-of-the-movie)
+    - [PLAY \[start=0\], \[end=length of the movie\]](#play-start0-endlength-of-the-movie)
     - [PIANO frame](#piano-frame)
     - [REFRESH](#refresh)
 
@@ -28,31 +30,37 @@ TwitchMakesATAS works off a democratic system. Each request to change the TAS is
 There are two types of voting in the bot.
 * TAS votes - Votes to change the TAS. Includes writing, removal, reverting.
 * Other votes - Votes for other elements of the stream. Includes going to a frame, playing from the start, or changing the piano roll.
+
 ## TAS Votes
 TAS votes occur every 45 seconds. These votes are the ones displayed on the stream. They include
-* Writing to the TAS. Example command: `WRITE 1,t,2`
-* Removing from the TAS. Example command: `DELETE 50,20,ab`
+* Writing to the TAS. Example command: `WRITE 1, t, 2`
+* Removing from the TAS. Example command: `DELETE 50, 20, ab`
 * Reverting to an older version of the TAS. Example command: `REVERT "11-05 V30"`
   
 After 45 seconds have passed, each TAS vote is counted and the command with the most votes is executed.
 If there are 3 votes in which no votes have been cast, however, the 45 second timer freezes until the next vote is cast.
+
 ## Other Votes
 These votes revolve around other elements of the TAS creation process. This includes
-* Playing the TAS. Example command: `PLAY 161,803`
+* Playing the TAS. Example command: `PLAY 161, 803`
 * Going to a frame in the TAS. Example command: `FRAME 455`
 * Changing the starting frame of the piano roll. Example command: `PIANO 3141`
   
-If an 'other' vote is cast, it will require a majority of viewers to agree to the command in order for it to be executed. This is because I believed these features would be better accessed whenever everyone agreed to do it, instead of having to wait for the vote timer to hit 0. This will happen exclusively in chat.
+If an 'other' vote is cast, it will require a majority (three-fifths) of viewers to agree to the command in order for it to be executed. This is because I believed these features would be better accessed whenever everyone agreed to do it, instead of having to wait for the vote timer to hit 0. This will happen exclusively in chat.
 
 # Commands
 Commands in the bot are signified by a capitalised starting word (except for general commands). Examples include `PLAY 31,41`, `WRITE 2718,abr`, `FRAME 250`, `REVERT "12-05 V10"`.
+## Major Syntax Note
+Each argument in a command is seperated by either a comma, or a comma with a space. The bot (most likely) wil
+
+*How do you know that the command has failed?* The bot wouldn't have responded to your message, or it doesnt appear on the stream.
 
 ## General Commands
 These commands are the only commands not to use the capitalised starting word format, instead starting with a backtick (\`). These commands take no arguments.
 ### `help
-Links you [here.](https://github.com/redstone59/TwitchMakesATAS/blob/main/README.md)
+Links you [here.](about:blank)
 ### `repo
-Links you to the [GitHub repo](https://github.com/redstone59/TwitchMakesATAS)
+Links you to the [GitHub repo](about:blank)
 ### `timeleft
 Makes the bot respond with how much time is left on the vote. Really only needed if you have extreme delay on your stream, though. The time left is on the stream itself.
 ### `uptime
@@ -62,7 +70,8 @@ Shows how long the bot has been online.
 These commands are the ones that you've seen earlier in the document. These commands alter the TAS, or interact with other elements of the stream, such as FCEUX or the piano roll.
 
 Arguments will be displayed like this: `COMMAND required-arg,[optional-arg=default]`
-### WRITE frame,buttons,\[length=1\],\[pattern=1\]
+
+### WRITE frame, buttons, \[length=1\], \[pattern=1\]
 Casts a vote to write to the TAS. 
 
 `frame` states the starting frame.
@@ -71,19 +80,11 @@ Casts a vote to write to the TAS.
 
 `length` states how many future frames will also have the buttons written too (This does **NOT** overwrite other frames.). Defaults to 1 frame.
 
-`pattern` is a number that changes the firing pattern of the button. Example: `WRITE 1,t,33,2` writes T (start) to 32 frames (ending at frame 33), with the pattern On, Off, since 2 in binary is 10. 
+`pattern` is a number that changes the firing pattern of the button. Example: `WRITE 1,t,32,2` writes T (start) to 32 frames (ending at frame 33), with the pattern On, Off, since 2 in binary is 10. 
 
 To write the "One Quarter" pattern (as it's known in the TAS Editor), first write it out in binary, where 1 is pressed and 0 is not pressed. 1000 is equal to 8 in base 10, and that number is what you would use for the `pattern` argument. By default, `pattern` is set to 1, which means its active each frame.
 
-Examples:
-
-`WRITE 250,a`: Writes the button A to frame 250.
-
-`WRITE 250,br,500`: Writes B and R for 500 frames **starting from** frame 250. (Writes from frame 250 to frame 750)
-
-`WRITE 1,t,33,2`: Writes T from frame 1 to frame 34 with an alternating pattern, like a Turbo Start button.
-
-### REMOVE frame,length,\[buttons="abstudlr"\]
+### REMOVE frame, length, \[buttons = "abstudlr"\]
 Removes all instances of the buttons specified from the starting frame to the starting frame plus the length.
 
 `frame` is the starting frame.
@@ -92,22 +93,13 @@ Removes all instances of the buttons specified from the starting frame to the st
 
 `buttons` specifies which inputs to remove. Defaults to all buttons, clearing an entire frame.
 
-Examples:
+### OVERWRITE frame, buttons, \[length = 1\]
+Same as `WRITE` but removes the existing data from the frames being written to.
 
-`REMOVE 319`: Removes all inputs on frame 319.
-
-`REMOVE 314,141`: Removes all inputs on the 141 frames **after** frame 314, including frame 314.
-
-`REMOVE 314,141,r`: Remove only R inputs from the range specified before.
-
-### INSERT frame,\[buttons=""\]
-**NOTE: This command is not present in the current version of the bot.**
-
+### INSERT frame, \[length = 1\], \[buttons = ""\]
 Adds one new frame while pushing all future frames forward. Defaults to an empty frame.
 
-### DELETE frame
-**NOTE: This command is not present in the current version of the bot.**
-
+### DELETE frame, \[length = 1\]
 Removes one remove while pushing all future frames back.
 
 ### IGNORE
@@ -124,16 +116,9 @@ Removes your vote from the pool. You do not need to call `RETRACT` if you are ch
 ### FRAME frame
 Goes to the frame specified. Requires a majority vote.
 
-### PLAY \[start=0\] \[end=length of the movie\]
+### PLAY \[start=0\], \[end=length of the movie\]
 Plays the TAS from the specified starting frame to the end frame. If no arguments are specified, then it plays the whole movie.
 Requires a majority vote.
-
-Examples:
-
-`PLAY`: Plays the whole movie
-`PLAY 161`: Plays the movie starting from frame 160.
-`PLAY 161,803`: Plays the movie from frame 160, and pauses on frame 803.
-`PLAY 0,803`: Plays the movie from the start, pausing at frame 803.
 
 ### PIANO frame
 Changes the piano roll to start from the frame specified. Requires a majority vote.
