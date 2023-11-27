@@ -95,12 +95,15 @@ class Ballot:
         
         if is_tied:
             winning_choice = random.choice(winning_choice)
+            winning_voters = self.cast_votes[winning_choice]
         elif winning_choice == []:
             winning_choice = ""
+            winning_voters = ""
         else:
             winning_choice = winning_choice[0]
+            winning_voters = self.cast_votes[winning_choice]
         
-        return winning_choice, largest_number_of_votes, is_tied, self.cast_votes[winning_choice]
+        return winning_choice, largest_number_of_votes, is_tied, winning_voters
 
     def is_over(self):
         if self.purgatory:

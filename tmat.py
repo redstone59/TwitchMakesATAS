@@ -264,10 +264,10 @@ class TwitchMakesATAS:
                 self.bot.is_active = False
                 self.bot.send_message("nya~!")
                 self.bot.disconnect()
-            except:
+            except ConnectionAbortedError:
                 pass
             
-            print(self.thank_you_string())
+            print(self.thank_you_string() + "\n\n") # Just in case that error shows up.
     
     def thank_you_string(self):
         result = ""
@@ -310,6 +310,9 @@ class TwitchMakesATAS:
     
     def update_thank_you(self, winning_voters):
         for voter in winning_voters:
+            if voter == "":
+                continue
+            
             if voter not in self.thank_you.keys():
                 self.thank_you[voter] = 0
             
