@@ -301,8 +301,7 @@ class TwitchMakesATAS:
         align_character = max([x.index(':') for x in intermediate_voter_string])
         
         for x in range (len(intermediate_voter_string)):
-            shift_amount = total_length // 2 - (align_character - intermediate_voter_string[x].index(':') + 1)
-            
+            shift_amount = align_character - intermediate_voter_string[x].index(':') + 1
             intermediate_voter_string[x] = " " * shift_amount + intermediate_voter_string[x]
         
         result = f"\n{'THANK YOU': ^{total_length}}\n"
