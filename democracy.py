@@ -149,7 +149,6 @@ class Democracy:
         self.yay_vote.cast(sender)
         
         if self.yay_vote.has_passed:
-            self.manifest_queue.put(("command", self.yay_vote.command))
             return
         
         self.manifest_queue.put(("message", f"{sender} has started a vote for {command}! Type 'YAY' to agree!"))
@@ -181,10 +180,10 @@ class Democracy:
                     continue
                 
                 self.manifest_queue.put(("command", ballot_results[0]))
-                
                 self.manifest_queue.put(("message", f"The winning vote is {ballot_results[0]}! Starting new vote..."))
-                
                 self.manifest_queue.put(("thankyou", ballot_results[3]))
+                
+                self.sequential_empty_ballots = 0
                 
                 self.current_ballot = Ballot(ballot_length)
             
