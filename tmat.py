@@ -17,6 +17,7 @@ class Instruction:
 class TwitchMakesATAS:
     def __init__(self, metadata):
         self.is_active = True
+        self.thank_you = {} # Counts the amount of times a viewer contributes to a winning vote. This is literally JUST for a twitter post
         
         self.start_time = 0
         self.vote_count = 0
@@ -250,12 +251,66 @@ class TwitchMakesATAS:
                         
                     case "command":
                         self.run_command(democracy_manifest[1])
+                    
+                    case "thankyou":
+                        self.update_thank_you(democracy_manifest[1])
         
         except KeyboardInterrupt:
-            self.is_active = False
-            self.bot.is_active = False
-            self.democracy.is_active = False
+            try: # The "turning off" part of the bot also throws an error from the socket? Let's just sweep it under the rug.
+                self.is_active = False
+                self.bot.is_active = False
+                self.democracy.is_active = False
+                
+                self.bot.is_active = False
+                self.bot.send_message("nya~!")
+                self.bot.disconnect()
+            except:
+                pass
             
-            self.bot.is_active = False
-            self.bot.send_message("nya~!")
-            self.bot.disconnect()
+            print(self.thank_you_string())
+    
+    def thank_you_string(self):
+        result = ""
+        sorted_thank_you = {}
+        intermediate_voter_string = []
+        
+        for x in sorted(self.thank_you, key=self.thank_you.get, reverse=True):
+            sorted_thank_you[x] = self.thank_you[x]
+        
+        for voter in sorted_thank_you:
+            intermediate_voter_string += [f"{voter}: {sorted_thank_you[voter]}"]
+        
+        total_length = max(len(x) for x in intermediate_voter_string) + 2
+        if total_length < 44:
+            total_length = 44
+        align_character = max([x.index(':') for x in intermediate_voter_string])
+        
+        for x in range (len(intermediate_voter_string)):
+            shift_amount = align_character - intermediate_voter_string[x].index(':') + 1
+            
+            intermediate_voter_string[x] = " " * shift_amount + intermediate_voter_string[x]
+        
+        result = f"\n{'THANK YOU': ^{total_length}}\n"
+        result += f"{' to the following viewers for contributing!': ^{total_length}}\n"
+        result += "-" * total_length + "\n"
+        
+        for x in intermediate_voter_string:
+            result += f"{x}\n"
+        
+        result += "-" * total_length + "\n"
+        
+        uptime = int(time.time() - self.start_time)
+        
+        result += f"{'TwitchMakesATAS was live for': ^{total_length}}\n"
+        result += f'{f"{uptime // 3600} hours, {(uptime // 60) % 60} minutes, and {uptime % 60} seconds.": ^{total_length}}\n'
+        
+        result += f"{f'and got {self.vote_count} votes': ^{total_length}}"
+        
+        return result
+    
+    def update_thank_you(self, winning_voters):
+        for voter in winning_voters:
+            if voter not in self.thank_you.keys():
+                self.thank_you[voter] = 0
+            
+            self.thank_you[voter] += 1

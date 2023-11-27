@@ -100,7 +100,7 @@ class Ballot:
         else:
             winning_choice = winning_choice[0]
         
-        return winning_choice, largest_number_of_votes, is_tied
+        return winning_choice, largest_number_of_votes, is_tied, self.cast_votes[winning_choice]
 
     def is_over(self):
         if self.purgatory:
@@ -180,6 +180,8 @@ class Democracy:
                 self.manifest_queue.put(("command", ballot_results[0]))
                 
                 self.manifest_queue.put(("message", f"The winning vote is {ballot_results[0]}! Starting new vote..."))
+                
+                self.manifest_queue.put(("thankyou", ballot_results[3]))
                 
                 self.current_ballot = Ballot(ballot_length)
             
