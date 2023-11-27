@@ -6,7 +6,7 @@ class Vote:
         self.choice = choice
 
 class YayOrNay:
-    def __init__(self, yay_length: int, viewers: int, command, majority = 0.3):
+    def __init__(self, yay_length: int, viewers: int, command, majority = 0.6):
         self.voters = []
         self.majority = int(viewers * majority)
         self.has_passed = False
@@ -88,7 +88,7 @@ class Ballot:
                 largest_number_of_votes = number_of_votes
                 winning_choice = [choice]
             
-            elif number_of_votes == largest_number_of_votes:
+            elif number_of_votes == largest_number_of_votes and number_of_votes != 0:
                 winning_choice += [choice]
         
         is_tied = len(winning_choice) > 1
@@ -178,6 +178,8 @@ class Democracy:
                     continue
                 
                 self.manifest_queue.put(("command", ballot_results[0]))
+                
+                self.manifest_queue.put(("message", f"The winning vote is {ballot_results[0]}! Starting new vote..."))
                 
                 self.current_ballot = Ballot(ballot_length)
             

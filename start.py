@@ -18,21 +18,18 @@ RAMInitOption 0
 RAMInitSeed 25271
 """
 
-TwitchMakesATAS(FM2_METADATA).start()
+tmat = TwitchMakesATAS(FM2_METADATA)
 
+tmat.tas.frame_limit = 100
 
-""" 8-4 pellson rom baloney
-tas = ToolAssistedSpeedrun(FM2)
+tmat.tas.write(10,'t')
+tmat.tas.write(47,'r',14,2)
+tmat.tas.write(61,'s')
+tmat.tas.write(63,'r',6,2)
+tmat.tas.write(69,'s',6,2)
+tmat.tas.write(75,'d',20,1135658)
+tmat.tas.write(77,'l')
+tmat.tas.write(87,'l')
+tmat.tas.write(99,'t')
 
-tas.write(10,'t')
-tas.write(47,'r',14,2)
-tas.write(61,'s')
-tas.write(63,'r',6,2)
-tas.write(69,'s',6,2)
-tas.write(75,'d',20,1135658)
-tas.write(77,'l')
-tas.write(87,'l')
-tas.write(99,'t')
-
-tas.export("new_tas_test")
-"""
+tmat.start("oauth:eminempussysoundeffect")

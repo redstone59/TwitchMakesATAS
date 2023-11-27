@@ -41,10 +41,10 @@ class TwitchMakesATAS:
                 if self.democracy.is_purgatory():
                     self.bot.send_message("The timer is paused due to a lack of votes. Vote to start the timer again!")
                 else:
-                    self.bot.send_message("this has not been implemented yet. teehee :3")
+                    self.bot.send_message(f"There is {int(self.democracy.current_ballot.time_left())} seconds remaining on the vote!")
             case "`uptime":
                 uptime = int(time.time() - self.start_time)
-                self.bot.send_message(f"TwitchMakesATAS has been active for {uptime//3600} hours, {(uptime//60)%60} minutes, and {uptime%60} seconds.")
+                self.bot.send_message(f"TwitchMakesATAS has been active for {uptime // 3600} hours, {(uptime // 60) % 60} minutes, and {uptime % 60} seconds.")
     '''
     def gui_loop(self):
         """
@@ -88,18 +88,15 @@ class TwitchMakesATAS:
             if parsed_message is None:
                 continue
             
-            self.run_command(parsed_message)
-            """
             vote_result = self.democracy.current_ballot.cast_vote(Vote(message.sender, parsed_message))
             
             if vote_result == "success":
                 number_of_votes = len(self.democracy.current_ballot.cast_votes[parsed_message])
-                self.bot.send_message(f"{message.sender} has just voted for {parsed_message}! It now has {number_of_votes} votes!")
+                self.bot.send_message(f"{message.sender} has just voted for {parsed_message}! It now has {number_of_votes} vote{'s' if number_of_votes > 1 else ''}!")
             elif vote_result == "retract":
                 self.bot.send_message(f"{message.sender} has just retracted their vote!")
             
             self.tk_queue.put(Instruction("vote", ()))
-            """
 
     def parse_message(self, message: Message):
         """
@@ -128,11 +125,9 @@ class TwitchMakesATAS:
         if command == "RETRACT":
             return ""
         
-        
         if len(split_instruction) <= 1:
             if command in ["PLAY", "PIANO", "REFRESH"]:
-                # self.democracy.create_yay_vote(message.sender, Instruction(command, ()), self.bot.viewer_count(), 30)
-                self.run_command(Instruction(command, ()))
+                self.democracy.create_yay_vote(message.sender, Instruction(command, ()), self.bot.viewer_count(), 30)
                 return
             
             return Instruction(command, ())
@@ -141,8 +136,7 @@ class TwitchMakesATAS:
         arguments = tuple(arguments.split(',')) # Turn command arguments into a tuple
         
         if command in ["FRAME", "PLAY", "PIANO", "REFRESH"]:
-            # self.democracy.create_yay_vote(message.sender, Instruction(command, arguments), self.bot.viewer_count())
-            self.run_command(Instruction(command, arguments))
+            self.democracy.create_yay_vote(message.sender, Instruction(command, arguments), self.bot.viewer_count())
             return
         
         return Instruction(command, arguments)
@@ -199,8 +193,10 @@ class TwitchMakesATAS:
                     
                     if len(instruction.arguments) == 1:
                         self.bot.send_message(f"Playing from frame {instruction.arguments[0]}...")
+                        nes.play(0, int(instruction.arguments[0]))
+                        return
                     elif len(instruction.arguments) == 2:
-                        self.bot.send_message(f"Playinf from frame {instruction.arguments[0]} until frame {instruction.arguments[1]}")
+                        self.bot.send_message(f"Playing from frame {instruction.arguments[0]} until frame {instruction.arguments[1]}")
                     else:
                         self.bot.send_message("Playing whole movie...")
                     
@@ -223,10 +219,10 @@ class TwitchMakesATAS:
         
         self.tk_queue.put(Instruction("vote", ()))
     
-    def start(self):
+    def start(self, token: str):
         self.start_time = time.time()
         
-        self.bot.connect("oauth:eminempussysoundeffect","TwitchMakesATAS","#redstone59")
+        self.bot.connect(token ,"TwitchMakesATAS","#redstone59")
         self.bot.send_message("owo")
 
         nes.file = "twitch"

@@ -1,4 +1,4 @@
-import os.path, sys
+import os.path, sys, datetime
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(sys.argv[0]))
 BUTTONS = "RLDUTSBA"
@@ -48,7 +48,9 @@ class ToolAssistedSpeedrun:
             dir (str, optional): The directory to the backup file. Defaults to `.\\backups`
         """
         
-        with open(os.path.join(dir, name + ".rtas"), "bw") as backup_file:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M_")
+        
+        with open(os.path.join(dir, f"{timestamp} {name}.rtas"), "bw") as backup_file:
             backup_file.write(bytearray(self.frames))
     
     def buttons_to_number(self, buttons: str):
@@ -66,7 +68,7 @@ class ToolAssistedSpeedrun:
             int: The equivalent buttons in number form.
         """
         if not self.is_valid_buttons(buttons):
-            raise ValueError(f"Invalid buttons {buttons}")
+            raise ValueError(f"Invalid buttons \"{buttons}\"")
         
         result = 0
         
@@ -88,7 +90,7 @@ class ToolAssistedSpeedrun:
         frame, length = int_all(frame, length)
         
         for i in range (length):
-            if frame >= len(self.frames): break
+            if frame > len(self.frames): break
             del self.frames[frame]
     
     def export(self, name: str, dir = CURRENT_DIRECTORY):
@@ -182,7 +184,7 @@ class ToolAssistedSpeedrun:
             self.frames += [0] * (frame + length - len(self.frames))
         
         for i in range (length):
-            self.frames[frame + i] = self.buttons_to_number(buttons)
+            self.frames[frame + i] = self.buttons_to_number(buttons) # Set the frame to the inputs provided.
 
     def remove(self, frame: int, length = 1, buttons = "RLDUTSBA"):
         """
@@ -199,7 +201,7 @@ class ToolAssistedSpeedrun:
         for i in range (length):
             if frame + i > len(self.frames): # Skip frames that don't exist.
                 break
-            self.frames[frame + i] &= (self.buttons_to_number(buttons) ^ 0xFF) # Unsigned not operand on self.buttons_to_number(buttons)
+            self.frames[frame + i] &= ~self.buttons_to_number(buttons) # Retain only the inputs that aren't being removed.
 
     def write(self, frame: int, buttons: str, length = 1, pattern = 0b1):
         """
@@ -209,7 +211,7 @@ class ToolAssistedSpeedrun:
             frame (int): The starting frame.
             buttons (str): The buttons to write.
             length (int, optional): Self-explanatory. Defaults to 1.
-            pattern (_type_, optional): Binary representation of the pattern to write. Defaults to `0b1` (always on).
+            pattern (int, optional): Binary representation of the pattern to write. Defaults to `0b1` (always on).
         """
         
         frame, length, pattern = int_all(frame, length, pattern)
@@ -221,4 +223,4 @@ class ToolAssistedSpeedrun:
         
         for i in range (length):
             if bit(pattern, pattern_length - (i % pattern_length)):
-                self.frames[frame + i] |= self.buttons_to_number(buttons)
+                self.frames[frame + i] |= self.buttons_to_number(buttons) # Add the inputs provided to the frame.
