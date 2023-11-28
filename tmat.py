@@ -6,6 +6,42 @@ import threading, regex
 
 import integration as nes
 
+DEFAULTS = {
+    "WRITE": (None, None, "1", "1"),
+    "REMOVE": (None, None, "RLDUTSBA"),
+    "OVERWRITE": (None, None, "1"),
+    "INSERT": (None, "1", ""),
+    "DELETE": (None, "1"),
+    "IGNORE": (),
+#   "REVERT": (None),
+    "RETRACT": (),
+    "FRAME": (None),
+    "PLAY": ("0", "-1"),
+    "PIANO": (None),
+    "REFRESH": ()
+}
+
+def button_sort(button_string: str):
+    """
+    Returns a sorted button string, unless the string is digits.
+
+    Args:
+        button_string (str): The string to sort.
+
+    Returns:
+        str: The sorted button string.
+    """
+    
+    if button_string.isdigit():
+        return button_string
+    
+    result = ""
+    
+    for x in "RLDUTSBA":
+        if x in button_string.upper(): result += x
+    
+    return result
+
 class Instruction:
     def __init__(self, command: str, arguments: tuple):
         self.command = command
@@ -21,6 +57,15 @@ class Instruction:
     
     def __str__(self):
         return f"{self.command.upper()} {','.join(self.arguments)}"
+    
+    def add_defaults(self, defaults: tuple):
+        defaults = list(defaults)
+        
+        for x in range (len(self.arguments)):
+            defaults[x] = button_sort(self.arguments[x])
+        
+        self.arguments = tuple(defaults)
+            
 
 class TwitchMakesATAS:
     def __init__(self, metadata):
@@ -66,7 +111,8 @@ class TwitchMakesATAS:
         except ConnectionAbortedError:
             pass
         
-        print(self.thank_you_string() + "\n\n") # Just in case that error shows up.
+        if len(self.thank_you) != 0:
+            print(self.thank_you_string() + "\n\n") # Just in case that error shows up.
         
     def manifest_loop(self):
         while self.is_active:
@@ -86,7 +132,9 @@ class TwitchMakesATAS:
                     self.update_thank_you(democracy_manifest[1])
                 
                 case "newballot":
-                    self.tk_queue.put(Instruction("vote", self.democracy.current_ballot.cast_votes))
+                    self.vote_count += 1
+                    self.gui.tk_queue.put(Instruction("vote", self.democracy.current_ballot.cast_votes))
+                    
                     if self.democracy.current_ballot.purgatory:
                         self.gui.tk_queue.put(Instruction("time", "paused"))
                     else:
@@ -137,7 +185,7 @@ class TwitchMakesATAS:
         
         self.backtick_commands(command)
         
-        if command not in ["WRITE", "REMOVE", "OVERWRITE", "INSERT", "DELETE", "IGNORE", "RETRACT", "FRAME", "PLAY", "PIANO", "REFRESH"]:
+        if command not in DEFAULTS.keys():
             return
         
         if command == "RETRACT":
@@ -157,7 +205,10 @@ class TwitchMakesATAS:
             self.democracy.create_yay_vote(message.sender, Instruction(command, arguments), self.bot.viewer_count())
             return
         
-        return Instruction(command, arguments)
+        parsed_instruction = Instruction(command, arguments)
+        parsed_instruction.add_defaults(DEFAULTS[command])
+        
+        return parsed_instruction
     
     def run_command(self, instruction: Instruction):
         if type(instruction) != Instruction:
@@ -197,27 +248,29 @@ class TwitchMakesATAS:
                     self.tas.delete(*instruction.arguments)
                 
                 case "IGNORE":
-                    pass
+                    return # To prevent making a backup that has no changes
                 
                 case "REVERT":
                     pass
                 
                 case "FRAME":
-                    if instruction.arguments[0][0] in ["+", "-"] and instruction.arguments[0][1:].isdigit():
-                        instruction.arguments = tuple(self.last_viewed_frame + int(instruction.arguments[0]))
-                    
-                    if not all([x.isdigit() for x in instruction.arguments]):
-                        return
-                    
                     if len(instruction.arguments) <= 0:
                         return
                     
-                    self.tas.export("twitch")
-                    self.bot.send_message(f"Going to frame {instruction.arguments[0]}...")
-                    nes.frame(*[int(x) for x in instruction.arguments])
+                    instruction.arguments = instruction.arguments[0]
                     
-                    self.last_viewed_frame = instruction.arguments[0]
-                    return # To not increment the vote counter.
+                    if instruction.arguments[0] in ["+", "-"] and instruction.arguments[1:].isdigit():
+                        instruction.arguments = str(self.last_viewed_frame + int(instruction.arguments))
+                    
+                    if not instruction.arguments.isdigit():
+                        return
+                    
+                    self.tas.export("twitch")
+                    self.bot.send_message(f"Going to frame {instruction.arguments}...")
+                    nes.frame(int(instruction.arguments))
+                    
+                    self.last_viewed_frame = int(instruction.arguments)
+                    return # To prevent making a backup that has no changes
                 
                 case "PLAY":
                     instruction.arguments = instruction.arguments[::-1] # Reverse the tuple. For some reason the 'start' and 'end' arguments are the wrong way around
@@ -232,13 +285,14 @@ class TwitchMakesATAS:
                         nes.play(0, int(instruction.arguments[0]))
                         return
                     elif len(instruction.arguments) == 2:
-                        self.bot.send_message(f"Playing from frame {instruction.arguments[1]} until frame {instruction.arguments[0]}...")
+                        self.bot.send_message(f"Playing from frame {instruction.arguments[1]} to frame {instruction.arguments[0]}...")
+                        self.last_viewed_frame = int(instruction.arguments[0])
                     else:
                         self.bot.send_message("Playing whole movie...")
                     
                     nes.play(*[int(x) for x in instruction.arguments])
                     
-                    return # To not increment the vote counter.
+                    return # To prevent making a backup that has no changes
                 
                 case "PIANO":
                     if not all([x.isdigit() for x in instruction.arguments]):
@@ -249,19 +303,17 @@ class TwitchMakesATAS:
                     
                     self.gui.tk_queue.put(Instruction("piano", (self.tas.frames, int(instruction.arguments[0]))))
                     
-                    return # To not increment the vote counter.
+                    return # To prevent making a backup that has no changes
                 
                 case "REFRESH":
                     self.gui.tk_queue.put(Instruction("piano", (self.tas.frames, -1)))
                     
-                    return # To not increment the vote counter.
+                    return # To prevent making a backup that has no changes
         
         except ValueError:
             pass
         
         self.tas.backup(f"vote_{self.vote_count}")
-        self.vote_count += 1
-        
         self.gui.tk_queue.put(Instruction("vote", self.democracy.current_ballot.cast_votes))
     
     def start(self, token: str):
