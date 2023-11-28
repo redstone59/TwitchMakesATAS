@@ -1,15 +1,23 @@
 from bot import *
 from democracy import *
 from tasmaker import *
+from gui import *
 import threading, regex
 
 import integration as nes
-# import gui
 
 class Instruction:
     def __init__(self, command: str, arguments: tuple):
         self.command = command
         self.arguments = arguments
+    
+    def __getitem__(self, key):
+        if key == 0:
+            return self.command
+        elif key == 1:
+            return self.arguments
+        
+        raise KeyError("Instruction only contains 2 objects.")
     
     def __str__(self):
         return f"{self.command.upper()} {','.join(self.arguments)}"
@@ -21,13 +29,12 @@ class TwitchMakesATAS:
         
         self.start_time = 0
         self.vote_count = 0
+        self.last_viewed_frame = 0
         
         self.bot = TwitchBot()
         self.democracy = Democracy()
         self.tas = ToolAssistedSpeedrun(metadata)
-        
-        self.tk_queue = queue.Queue()
-        self.last_viewed_frame = 0
+        self.gui = MasterWindow()
 
     def backtick_commands(self, command: str):
         if not command.startswith('`'):
@@ -46,35 +53,45 @@ class TwitchMakesATAS:
             case "`uptime":
                 uptime = int(time.time() - self.start_time)
                 self.bot.send_message(f"TwitchMakesATAS has been active for {uptime // 3600} hours, {(uptime // 60) % 60} minutes, and {uptime % 60} seconds.")
-    '''
-    def gui_loop(self):
-        """
-        Main loop of the GUI. Could do with a rewrite at some point.
-        """
+    
+    def disconnect(self):
+        try: # The "turning off" part of the bot also throws an error from the socket? Let's just sweep it under the rug.
+            self.is_active = False
+            self.bot.is_active = False
+            self.democracy.is_active = False
+            
+            self.bot.is_active = False
+            self.bot.send_message("nya~!")
+            self.bot.disconnect()
+        except ConnectionAbortedError:
+            pass
+        
+        print(self.thank_you_string() + "\n\n") # Just in case that error shows up.
+        
+    def manifest_loop(self):
         while self.is_active:
-            
-            gui.update_time()
-            gui.master.update()
-            gui.vote.update()
-            gui.pr.update()
-            
-            if self.tk_queue.empty():
+            if self.democracy.manifest_queue.empty(): # This should mean I can KeyboardInterrupt at any time, since .get() blocks.
                 continue
             
-            tk_instruction = self.tk_queue.get()
+            democracy_manifest = self.democracy.manifest_queue.get() # What is the charge? Eating a meal? A succulent Chinese meal?
             
-            match tk_instruction.command:
-                case "vote":
-                    gui.update_votes(self.democracy.current_ballot.cast_votes)
-                case "piano":
-                    if tk_instruction.arguments == ():
-                        gui.update_piano_roll()
+            match democracy_manifest[0]:
+                case "message":
+                    self.bot.send_message(democracy_manifest[1])
+                    
+                case "command":
+                    self.run_command(democracy_manifest[1])
+                
+                case "thankyou":
+                    self.update_thank_you(democracy_manifest[1])
+                
+                case "newballot":
+                    self.tk_queue.put(Instruction("vote", self.democracy.current_ballot.cast_votes))
+                    if self.democracy.current_ballot.purgatory:
+                        self.gui.tk_queue.put(Instruction("time", "paused"))
                     else:
-                        gui.update_piano_roll(tk_instruction.arguments[0])
-                case "time":
-                    gui.update_time()
-    '''
-
+                        self.gui.tk_queue.put(Instruction("time", time.time() + 45))
+    
     def parsing_loop(self):
         """
         Main loop of TwitchMakesATAS. Waits until a message is sent, then parses and runs the instruction.
@@ -97,7 +114,7 @@ class TwitchMakesATAS:
             elif vote_result == "retract":
                 self.bot.send_message(f"{message.sender} has just retracted their vote!")
             
-            self.tk_queue.put(Instruction("vote", ()))
+            self.gui.tk_queue.put(("vote", self.democracy.current_ballot.cast_votes))
 
     def parse_message(self, message: Message):
         """
@@ -120,14 +137,14 @@ class TwitchMakesATAS:
         
         self.backtick_commands(command)
         
-        if command not in ["WRITE", "REMOVE", "INSERT", "DELETE", "IGNORE", "RETRACT", "FRAME", "PLAY", "PIANO", "REFRESH"]:
+        if command not in ["WRITE", "REMOVE", "OVERWRITE", "INSERT", "DELETE", "IGNORE", "RETRACT", "FRAME", "PLAY", "PIANO", "REFRESH"]:
             return
         
         if command == "RETRACT":
             return ""
         
         if len(split_instruction) <= 1:
-            if command in ["PLAY", "PIANO", "REFRESH"]:
+            if command in ["PLAY", "REFRESH"]:
                 self.democracy.create_yay_vote(message.sender, Instruction(command, ()), self.bot.viewer_count(), 30)
                 return
             
@@ -186,6 +203,9 @@ class TwitchMakesATAS:
                     pass
                 
                 case "FRAME":
+                    if instruction.arguments[0][0] in ["+", "-"] and instruction.arguments[0][1:].isdigit():
+                        instruction.arguments = tuple(self.last_viewed_frame + int(instruction.arguments[0]))
+                    
                     if not all([x.isdigit() for x in instruction.arguments]):
                         return
                     
@@ -195,6 +215,9 @@ class TwitchMakesATAS:
                     self.tas.export("twitch")
                     self.bot.send_message(f"Going to frame {instruction.arguments[0]}...")
                     nes.frame(*[int(x) for x in instruction.arguments])
+                    
+                    self.last_viewed_frame = instruction.arguments[0]
+                    return # To not increment the vote counter.
                 
                 case "PLAY":
                     instruction.arguments = instruction.arguments[::-1] # Reverse the tuple. For some reason the 'start' and 'end' arguments are the wrong way around
@@ -209,11 +232,13 @@ class TwitchMakesATAS:
                         nes.play(0, int(instruction.arguments[0]))
                         return
                     elif len(instruction.arguments) == 2:
-                        self.bot.send_message(f"Playing from frame {instruction.arguments[1]} until frame {instruction.arguments[0]}")
+                        self.bot.send_message(f"Playing from frame {instruction.arguments[1]} until frame {instruction.arguments[0]}...")
                     else:
                         self.bot.send_message("Playing whole movie...")
                     
                     nes.play(*[int(x) for x in instruction.arguments])
+                    
+                    return # To not increment the vote counter.
                 
                 case "PIANO":
                     if not all([x.isdigit() for x in instruction.arguments]):
@@ -222,10 +247,14 @@ class TwitchMakesATAS:
                     if len(instruction.arguments) <= 0:
                         return
                     
-                    self.tk_queue.put(Instruction("piano", *[int(x) for x in instruction.arguments]))
+                    self.gui.tk_queue.put(Instruction("piano", (self.tas.frames, int(instruction.arguments[0]))))
+                    
+                    return # To not increment the vote counter.
                 
                 case "REFRESH":
-                    self.tk_queue.put(Instruction("piano", ()))
+                    self.gui.tk_queue.put(Instruction("piano", (self.tas.frames, -1)))
+                    
+                    return # To not increment the vote counter.
         
         except ValueError:
             pass
@@ -233,7 +262,7 @@ class TwitchMakesATAS:
         self.tas.backup(f"vote_{self.vote_count}")
         self.vote_count += 1
         
-        self.tk_queue.put(Instruction("vote", ()))
+        self.gui.tk_queue.put(Instruction("vote", self.democracy.current_ballot.cast_votes))
     
     def start(self, token: str):
         self.start_time = time.time()
@@ -247,42 +276,22 @@ class TwitchMakesATAS:
             bot_thread = threading.Thread(target=self.bot.message_loop)
             democracy_thread = threading.Thread(target=self.democracy.democracy_loop)
             parsing_thread = threading.Thread(target=self.parsing_loop)
-            # gui_thread = threading.Thread(target=self.gui_loop)
+            manifest_thread = threading.Thread(target=self.manifest_loop)
             
             bot_thread.start()
             democracy_thread.start()
             parsing_thread.start()
-            # gui_thread.start()
+            manifest_thread.start()
             
-            while self.is_active:
-                if self.democracy.manifest_queue.empty(): # This should mean I can KeyboardInterrupt at any time, since .get() blocks.
-                    continue
-                
-                democracy_manifest = self.democracy.manifest_queue.get() # What is the charge? Eating a meal? A succulent Chinese meal?
-                
-                match democracy_manifest[0]:
-                    case "message":
-                        self.bot.send_message(democracy_manifest[1])
-                        
-                    case "command":
-                        self.run_command(democracy_manifest[1])
-                    
-                    case "thankyou":
-                        self.update_thank_you(democracy_manifest[1])
+            try:
+                self.gui.main_loop()
+            except Exception as e:
+                self.bot.send_message(f"Error! {str(e.__class__)[:-2][8:]}: {e}")
         
         except KeyboardInterrupt:
-            try: # The "turning off" part of the bot also throws an error from the socket? Let's just sweep it under the rug.
-                self.is_active = False
-                self.bot.is_active = False
-                self.democracy.is_active = False
-                
-                self.bot.is_active = False
-                self.bot.send_message("nya~!")
-                self.bot.disconnect()
-            except ConnectionAbortedError:
-                pass
-            
-            print(self.thank_you_string() + "\n\n") # Just in case that error shows up.
+            pass
+        
+        self.disconnect()
     
     def thank_you_string(self):
         result = ""
@@ -298,7 +307,6 @@ class TwitchMakesATAS:
         total_length = max(len(x) for x in intermediate_voter_string) * 2 + 2
         if total_length < 44:
             total_length = 44
-        align_character = max([x.index(':') for x in intermediate_voter_string])
         
         for x in range (len(intermediate_voter_string)):
             shift_amount = total_length // 2 - intermediate_voter_string[x].index(':') + 1

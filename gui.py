@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-import time, queue, threading
+import time, queue
 
 BUTTONS = "RLDUTSBA"
 
@@ -39,10 +39,6 @@ class PianoRoll:
         self.set_up_labels()
         self.update_piano_roll([], 0)
     
-    def main_loop(self):
-        while self.is_active:
-            self.piano_roll.update()
-    
     def set_up_labels(self):
         tk.Label(self.piano_roll,
                  text = "Piano Roll",
@@ -80,7 +76,7 @@ class PianoRoll:
         for label in self.piano_roll.grid_slaves():
             if int(label.grid_info()["row"]) > 1: label.destroy()
             n += 1
-            if n % 18 == 0: self.piano_roll.update() # I honestly don't know why this line existed, but I copied it as is.
+            if n % 9 == 0: self.piano_roll.update() # This just means the piano roll doesn't update until a line has cleared.
         
         for x in range(self.displayed_frames):
             tk.Label(self.piano_roll,
@@ -98,7 +94,7 @@ class PianoRoll:
                 
                 if start_frame + x < len(tas_list):
                     frame = tas_list[start_frame + x]
-                    if (frame >> index) & 1:
+                    if (frame >> (7 - index)) & 1:
                         input = button
                 
                 tk.Label(self.piano_roll,
@@ -124,11 +120,11 @@ class VoteDisplay:
         self.vote_window.geometry("480x720+2040+50")
         self.vote_window.title("TAS Votes")
         
-        self.end_time = time.time() + 45
+        self.end_time = time.time() + 48
         self.vote_range = 17
         
         self.time_label = tk.Label(self.vote_window,
-                                   text = "45 seconds",
+                                   text = "48 seconds",
                                    font = scale_font(self.font, 28)
                                    )
         
@@ -183,6 +179,8 @@ class VoteDisplay:
         sorted_votes = {}
         
         for x in sorted(vote_dict, key=vote_dict.get, reverse=True):
+            self.update_time()
+            self.vote_window.update()
             sorted_votes[x] = vote_dict[x]
         
         for label in self.vote_window.grid_slaves():
@@ -204,7 +202,7 @@ class VoteDisplay:
                 count = " "
             
             tk.Label(self.vote_window,
-                     text = f"{command:>100}"[-26:],
+                     text = f"{str(command):>100}"[-26:],
                      font = scale_font(self.font, 20),
                      bg = ["white", "grey90"][x % 2],
                      highlightthickness = 1,
@@ -219,6 +217,8 @@ class VoteDisplay:
                      highlightcolor = "grey50",
                      highlightbackground= "grey50"
                      ).grid(column = 2, row = 2 + x, sticky = "W")
+        
+        self.vote_window.update()
 
 class MasterWindow:
     def __init__(self, font_name = "Courier New", scale = 0.75):
@@ -236,24 +236,30 @@ class MasterWindow:
     def main_loop(self):
         try:
             while self.is_active:
-                self.vote.main_loop()
+                self.vote.update_time()
+                self.vote.vote_window.update()
                 self.piano_roll.piano_roll.update()
                 self.master.update()
                 
-                if not self.tk_queue.empty():
-                    instruction = self.tk_queue.get()
-                    
-                    match instruction[0]:
-                        case "vote":
-                            self.vote.update_votes(instruction[1])
-                        case "piano":
-                            self.piano_roll.update_piano_roll(instruction[1])
-                        case "time":
-                            self.vote.end_time = time.time() + instruction[1]
-                            self.vote.update_time()
+                if self.tk_queue.empty():
+                    continue
+                
+                instruction = self.tk_queue.get_nowait()
+                
+                match instruction[0]:
+                    case "vote":
+                        self.vote.update_votes(instruction[1])
+                    case "piano":
+                        self.piano_roll.update_piano_roll(*instruction[1])
+                    case "time":
+                        self.vote.end_time = instruction[1]
+                        self.vote.update_time()
         
         except KeyboardInterrupt:
-            self.is_active = False
-            self.vote.is_active = False
-            self.piano_roll.is_active = False
-            return
+            pass
+        
+        self.is_active = False
+        self.vote.is_active = False
+        self.piano_roll.is_active = False
+        
+        return

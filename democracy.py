@@ -167,6 +167,8 @@ class Democracy:
             if self.current_ballot.is_over():
                 ballot_results = self.current_ballot.end()
                 
+                self.manifest_queue.put(("newballot", "newballot"))
+                
                 self.has_alerted = False
                 
                 if ballot_results[0] == "":

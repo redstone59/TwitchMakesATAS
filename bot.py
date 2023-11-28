@@ -1,4 +1,5 @@
 import socket, time
+import queue
 
 class Message:
     def __init__(self, sender: str, contents: str):
@@ -23,12 +24,12 @@ class TwitchBot:
         
         self.time_of_last_message = time.time()
         self.messages_last_minute = 0
-        self.message_queue = [] # This feels clunky, replace?
+        self.message_queue = queue.Queue()
         self.message_limit = 100
     
     def connect(self, token: str, nickname: str, channel: str, server = 'irc.chat.twitch.tv', port = 6667):
         """
-        Connects TwitchMakesATAS to the Twitch Chat API.
+        Connects the `TwitchBot` to the Twitch Chat API.
 
         Args:
             token (str): OAuth token used to connect with Twitch API.
@@ -46,11 +47,11 @@ class TwitchBot:
         self.sock.send(f"NICK {nickname}\n".encode('utf-8'))
         self.sock.send(f"JOIN {channel}\n".encode('utf-8'))
         
-        print("TwitchMakesATAS connected")
+        print("Bot connected")
     
     def disconnect(self):
         """
-        Disconnects TwitchMakesATAS from the Twitch Chat API.
+        Disconnects the `TwitchBot` from the Twitch Chat API.
         """
         
         self.is_active = False
@@ -66,8 +67,7 @@ class TwitchBot:
             if time.time() - self.time_of_last_message >= 60:
                 self.messages_last_minute = 0
                 self.can_speak = True
-            
-            self.time_of_last_message = time.time()
+                self.time_of_last_message = time.time()
             
             response = self.sock.recv(2048).decode('utf-8')
 
@@ -82,8 +82,9 @@ class TwitchBot:
                 contents = ':'.join(contents)
                 
                 print(Message(sender, contents))
+                
                 self.update_viewer_list(sender)
-                self.message_queue += [Message(sender, contents)] # Should probably respond to messages as soon as they arrive, like in the previous version.
+                self.message_queue.put(Message(sender, contents))
     
     def send_message(self, message: str):
         if self.messages_last_minute >= self.message_limit:
