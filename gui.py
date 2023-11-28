@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
-import time, queue, threading
+import time, queue
 
 BUTTONS = "RLDUTSBA"
 
@@ -71,12 +70,8 @@ class PianoRoll:
         if self.is_updating: return
         self.is_updating = True
         
-#       n = 0
-        
         for label in self.piano_roll.winfo_children():
             if int(label.grid_info()["row"]) > 1: label.destroy()
-#           n += 1
-#           if n % 9 == 0: self.piano_roll.update() # This just means the piano roll doesn't update until a line has cleared.
         
         self.piano_roll.update()
         
@@ -180,20 +175,15 @@ class VoteDisplay:
         sorted_votes = {}
         
         for x in sorted(vote_dict, key=vote_dict.get, reverse=True):
-#           self.update_time()
-#           self.vote_window.update()
             sorted_votes[x] = vote_dict[x]
         
-        for label in self.vote_window.grid_slaves():
-#           self.update_time()
+        for label in self.vote_window.winfo_children():
             if 1 < int(label.grid_info()["row"]) <= self.vote_range:
                 label.destroy()
         
         keys = list(sorted_votes.keys())[:self.vote_range]
         
         for x in range(self.vote_range):
-#           self.update_time()
-            
             if x > 30: break
             if x < len(sorted_votes):
                 command = keys[x]
@@ -218,8 +208,6 @@ class VoteDisplay:
                      highlightcolor = "grey50",
                      highlightbackground= "grey50"
                      ).grid(column = 2, row = 2 + x, sticky = "W")
-        
-#       self.vote_window.update()
 
 class MasterWindow:
     def __init__(self, font_name = "Courier New", scale = 0.75):
@@ -227,6 +215,7 @@ class MasterWindow:
         self.is_active = True
         
         self.font = (font_name, scale)
+        self.queue_check_frequency = 33
         
         self.master = tk.Tk()
         self.master.withdraw()
@@ -249,12 +238,13 @@ class MasterWindow:
                     self.vote.end_time = instruction[1]
                     self.vote.update_time()
                     
-        self.master.after(33, self.queue_check)
+        self.master.after(self.queue_check_frequency, self.queue_check)
     
     def main_loop(self):
         try:
-            self.master.after(33, self.queue_check)
+            self.master.after(self.queue_check_frequency, self.queue_check)
             self.master.mainloop()
+        
         except KeyboardInterrupt:
             pass
         
