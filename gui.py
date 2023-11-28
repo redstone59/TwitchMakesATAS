@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-import time, queue
+import time, queue, threading
 
 BUTTONS = "RLDUTSBA"
 
@@ -71,12 +71,14 @@ class PianoRoll:
         if self.is_updating: return
         self.is_updating = True
         
-        n = 0
+#       n = 0
         
-        for label in self.piano_roll.grid_slaves():
+        for label in self.piano_roll.winfo_children():
             if int(label.grid_info()["row"]) > 1: label.destroy()
-            n += 1
-            if n % 9 == 0: self.piano_roll.update() # This just means the piano roll doesn't update until a line has cleared.
+#           n += 1
+#           if n % 9 == 0: self.piano_roll.update() # This just means the piano roll doesn't update until a line has cleared.
+        
+        self.piano_roll.update()
         
         for x in range(self.displayed_frames):
             tk.Label(self.piano_roll,
@@ -119,6 +121,7 @@ class VoteDisplay:
         self.vote_window = tk.Toplevel(host)
         self.vote_window.geometry("480x720+2040+50")
         self.vote_window.title("TAS Votes")
+        self.last_votes = {}
         
         self.end_time = time.time() + 48
         self.vote_range = 17
@@ -129,12 +132,7 @@ class VoteDisplay:
                                    )
         
         self.set_up_labels()
-        self.update_votes({})
-    
-    def main_loop(self):
-        while self.is_active:
-            self.update_time()
-            self.vote_window.update()
+        self.update_votes({" ":" "})
       
     def set_up_labels(self):
         tk.Label(self.vote_window,
@@ -176,22 +174,25 @@ class VoteDisplay:
         self.time_label["text"] = str(int(self.end_time - time.time())) + " seconds"
     
     def update_votes(self, vote_dict: dict):
+        if vote_dict == self.last_votes: return
+        
+        self.last_votes = vote_dict
         sorted_votes = {}
         
         for x in sorted(vote_dict, key=vote_dict.get, reverse=True):
-            self.update_time()
-            self.vote_window.update()
+#           self.update_time()
+#           self.vote_window.update()
             sorted_votes[x] = vote_dict[x]
         
         for label in self.vote_window.grid_slaves():
-            self.update_time()
+#           self.update_time()
             if 1 < int(label.grid_info()["row"]) <= self.vote_range:
                 label.destroy()
         
         keys = list(sorted_votes.keys())[:self.vote_range]
         
         for x in range(self.vote_range):
-            self.update_time()
+#           self.update_time()
             
             if x > 30: break
             if x < len(sorted_votes):
@@ -218,7 +219,7 @@ class VoteDisplay:
                      highlightbackground= "grey50"
                      ).grid(column = 2, row = 2 + x, sticky = "W")
         
-        self.vote_window.update()
+#       self.vote_window.update()
 
 class MasterWindow:
     def __init__(self, font_name = "Courier New", scale = 0.75):
@@ -232,29 +233,28 @@ class MasterWindow:
         
         self.vote = VoteDisplay(self.master, self.font)
         self.piano_roll = PianoRoll(self.master, self.font)
+    
+    def queue_check(self):
+        self.vote.update_time()
         
+        while not self.tk_queue.empty():
+            instruction = self.tk_queue.get_nowait()
+            
+            match instruction[0]:
+                case "vote":
+                    self.vote.update_votes(instruction[1])
+                case "piano":
+                    self.piano_roll.update_piano_roll(*instruction[1])
+                case "time":
+                    self.vote.end_time = instruction[1]
+                    self.vote.update_time()
+                    
+        self.master.after(33, self.queue_check)
+    
     def main_loop(self):
         try:
-            while self.is_active:
-                self.vote.update_time()
-                self.vote.vote_window.update()
-                self.piano_roll.piano_roll.update()
-                self.master.update()
-                
-                if self.tk_queue.empty():
-                    continue
-                
-                instruction = self.tk_queue.get_nowait()
-                
-                match instruction[0]:
-                    case "vote":
-                        self.vote.update_votes(instruction[1])
-                    case "piano":
-                        self.piano_roll.update_piano_roll(*instruction[1])
-                    case "time":
-                        self.vote.end_time = instruction[1]
-                        self.vote.update_time()
-        
+            self.master.after(33, self.queue_check)
+            self.master.mainloop()
         except KeyboardInterrupt:
             pass
         

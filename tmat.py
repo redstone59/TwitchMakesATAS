@@ -104,15 +104,20 @@ class TwitchMakesATAS:
             self.is_active = False
             self.bot.is_active = False
             self.democracy.is_active = False
+            self.gui.is_active = False
             
             self.bot.is_active = False
             self.bot.send_message("nya~!")
             self.bot.disconnect()
+        
         except ConnectionAbortedError:
             pass
         
         if len(self.thank_you) != 0:
-            print(self.thank_you_string() + "\n\n") # Just in case that error shows up.
+            thank_you_string = self.thank_you_string()
+            print(thank_you_string + "\n\n") # Just in case that error shows up.
+            with open("thank_you.txt","w") as file:
+                file.write(thank_you_string)
         
     def manifest_loop(self):
         while self.is_active:
@@ -133,12 +138,13 @@ class TwitchMakesATAS:
                 
                 case "newballot":
                     self.vote_count += 1
-                    self.gui.tk_queue.put(Instruction("vote", self.democracy.current_ballot.cast_votes))
                     
                     if self.democracy.current_ballot.purgatory:
                         self.gui.tk_queue.put(Instruction("time", "paused"))
                     else:
                         self.gui.tk_queue.put(Instruction("time", time.time() + 45))
+                    
+                    self.gui.tk_queue.put(Instruction("vote", self.democracy.current_ballot.cast_votes))
     
     def parsing_loop(self):
         """
@@ -154,6 +160,7 @@ class TwitchMakesATAS:
             if parsed_message is None:
                 continue
             
+            self.democracy.sequential_empty_ballots = 0
             vote_result = self.democracy.current_ballot.cast_vote(Vote(message.sender, parsed_message))
             
             if vote_result == "success":
