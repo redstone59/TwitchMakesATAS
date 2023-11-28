@@ -19,7 +19,7 @@
     - [IGNORE](#ignore)
     - [REVERT tas-name](#revert-tas-name)
     - [RETRACT](#retract)
-    - [FRAME frame](#frame-frame)
+    - [FRAME frame | FRAME ±frame offset](#frame-frame--frame-frame-offset)
     - [PLAY \[start=0\], \[end=length of the movie\]](#play-start0-endlength-of-the-movie)
     - [PIANO frame](#piano-frame)
     - [REFRESH](#refresh)
@@ -51,7 +51,11 @@ If an 'other' vote is cast, it will require a majority (three-fifths) of viewers
 # Commands
 Commands in the bot are signified by a capitalised starting word (except for general commands). Examples include `PLAY 31,41`, `WRITE 2718,abr`, `FRAME 250`, `REVERT "12-05 V10"`.
 ## Major Syntax Note
-Each argument in a command is seperated by either a comma, or a comma with a space. The bot (most likely) wil
+Each argument in a command is seperated by a comma. **Commands are** ***not*** **seperated by whitespace**. It does not matter if the comma is surrounded by whitespace, all that matters is that there is a comma.
+
+Commands are also case-insenstive, barring the first word.
+
+Example: `WRITE 1, at, 33, 2` is equivalent to `WRITE 1,aT,33,2` and `WRITE 1,   AT    , 33              ,2`.
 
 *How do you know that the command has failed?* The bot wouldn't have responded to your message, or it doesnt appear on the stream.
 
@@ -113,8 +117,9 @@ Reverts the TAS to a previous state, the name chosen from the TAS History sectio
 ### RETRACT
 Removes your vote from the pool. You do not need to call `RETRACT` if you are changing your vote. Changing your vote automatically retracts your previous one.
 
-### FRAME frame
+### FRAME frame | FRAME ±frame offset
 Goes to the frame specified. Requires a majority vote.
+If the number is preceded by a plus or a minus, it will go to the last viewed frame plus the offset given. Requires a majority vote.
 
 ### PLAY \[start=0\], \[end=length of the movie\]
 Plays the TAS from the specified starting frame to the end frame. If no arguments are specified, then it plays the whole movie.
