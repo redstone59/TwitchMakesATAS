@@ -127,7 +127,8 @@ Requires a majority vote.
 
 ### PIANO frame
 Changes the piano roll to start from the frame specified. Requires a majority vote.
-*Note: Updating the piano roll is a literal snail and will freeze other GUI elements. Use with care.*
+*Note: Updating the piano roll takes about a minute and will freeze other GUI elements. Use with care.*
 
 ### REFRESH
-Refreshes the piano roll. Requires a majority vote. *Note: Updating the piano roll is a literal snail and will freeze other GUI elements. Use with care.*
+Refreshes the piano roll. Requires a majority vote.
+*Note: Updating the piano roll takes about a minute and will freeze other GUI elements. Use with care.*
