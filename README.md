@@ -64,7 +64,7 @@ These commands are the only commands not to use the capitalised starting word fo
 ### `help
 Links you [here.](about:blank)
 ### `repo
-Links you to the [GitHub repo](about:blank)
+Links you to the [GitHub repo](https://github.com/redstone59/TwitchMakesATAS)
 ### `timeleft
 Makes the bot respond with how much time is left on the vote. Really only needed if you have extreme delay on your stream, though. The time left is on the stream itself.
 ### `uptime
