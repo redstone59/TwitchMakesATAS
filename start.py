@@ -20,15 +20,15 @@ RAMInitSeed 25271
 
 tmat = TwitchMakesATAS(FM2_METADATA)
 
-# Pellson ROM 4-2 with framerule 289. Thanks Lain!
+# Pellson ROM 8-2 with framerule 526. Thanks Lain!
 tmat.tas.write(10, 't')
-tmat.tas.write(47, 'r', 9, 0b101010001)
-tmat.tas.write(53, 's', 9, 0b100010101)
-tmat.tas.write(63, 'd', 7, 0b1010001)
-tmat.tas.write(67, 'l', 5, 0b10001)
-tmat.tas.write(73, 'u', 3, 0b101)
-tmat.tas.write(78, 't')
+tmat.tas.write(47, 'r', 17, 0b10101010101010001)
+tmat.tas.write(61, 's', 9, 0b100010101)
+tmat.tas.write(71, 'd', 7, 0b1010101)
+tmat.tas.write(79, 'l', 7, 0b1000001)
+tmat.tas.write(81, 'u', 15, 0b101000101010101)
+tmat.tas.write(100, 't')
 
-tmat.tas.frame_limit = 100
+tmat.tas.frame_limit = 101
 
 tmat.start("oauth:eminempussysoundeffect")
